@@ -12,7 +12,9 @@ public class CustomersController : Controller
     private readonly CustomerRepository _customerRepository;
     private readonly CustomerService _customerService;
 
-    public CustomersController(MovieRepository movieRepository, CustomerRepository customerRepository, CustomerService customerService)
+    public CustomersController(MovieRepository movieRepository, 
+        CustomerRepository customerRepository, 
+        CustomerService customerService)
     {
         _customerRepository = customerRepository;
         _movieRepository = movieRepository;
@@ -113,7 +115,10 @@ public class CustomersController : Controller
                 return BadRequest("Invalid customer id: " + id);
             }
 
-            if (customer.PurchasedMovies.Any(x => x.MovieId == movie.Id && (x.ExpirationDate == null || x.ExpirationDate.Value >= DateTime.UtcNow)))
+            if (customer.PurchasedMovies.Any(
+                x => x.MovieId == movie.Id 
+                && (x.ExpirationDate == null 
+                || x.ExpirationDate.Value >= DateTime.UtcNow)))
             {
                 return BadRequest("The movie is already purchased: " + movie.Name);
             }
