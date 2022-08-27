@@ -39,4 +39,14 @@ public class Email : ValueObject<Email>
     {
         return Value.GetHashCode();
     }
+
+    public static implicit operator string(Email email)
+    {
+        return email.Value;
+    }
+
+    public static explicit operator Email(string email)
+    {
+        return Create(email).Value;
+    }
 }
