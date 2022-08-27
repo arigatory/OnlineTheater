@@ -38,4 +38,14 @@ public class CustomerName : ValueObject<CustomerName>
     {
         return Value.GetHashCode();
     }
+
+    public static implicit operator string(CustomerName customerName)
+    {
+        return customerName.Value;
+    }
+
+    public static explicit operator CustomerName(string customerName)
+    {
+        return Create(customerName).Value;
+    }
 }
