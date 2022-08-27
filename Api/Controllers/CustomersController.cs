@@ -2,7 +2,6 @@
 using Logic.Dtos;
 using Logic.Entities;
 using Logic.Repositories;
-using Logic.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
@@ -12,15 +11,12 @@ public class CustomersController : Controller
 {
     private readonly MovieRepository _movieRepository;
     private readonly CustomerRepository _customerRepository;
-    private readonly CustomerService _customerService;
 
     public CustomersController(MovieRepository movieRepository, 
-        CustomerRepository customerRepository, 
-        CustomerService customerService)
+        CustomerRepository customerRepository)
     {
         _customerRepository = customerRepository;
         _movieRepository = movieRepository;
-        _customerService = customerService;
     }
 
     [HttpGet]
@@ -37,8 +33,8 @@ public class CustomersController : Controller
             Name = customer.Name.Value,
             Email = customer.Email.Value,
             MoneySpent = customer.MoneySpent,
-            Status = customer.Status.ToString(),
-            StatusExpirationDate = customer.StatusExpirationDate,
+            Status = customer.Status.Type.ToString(),
+            StatusExpirationDate = customer.Status.ExpirationDate,
             PurchasedMovies = customer.PurchasedMovies.Select(x=> new PurchasedMovieDto
             {
                 Price = x.Price,
@@ -66,8 +62,8 @@ public class CustomersController : Controller
             Name = x.Name.Value,
             Email = x.Email.Value,
             MoneySpent = x.MoneySpent,
-            Status = x.Status.ToString(),
-            StatusExpirationDate = x.StatusExpirationDate
+            Status = x.Status.Type.ToString(),
+            StatusExpirationDate = x.Status.ExpirationDate
         }).ToList();
 
         return Json(dtos);
@@ -79,9 +75,9 @@ public class CustomersController : Controller
         try
         {
             Result<CustomerName> customerNameOrError = CustomerName.Create(item.Name);
-            Result<Email> emailOfError = Email.Create(item.Email);
+            Result<Email> emailOrError = Email.Create(item.Email);
 
-            Result result = Result.Combine(customerNameOrError, emailOfError);
+            Result result = Result.Combine(customerNameOrError, emailOrError);
             if (result.IsFailure)
             {
                 return BadRequest(result.Error);
@@ -89,20 +85,12 @@ public class CustomersController : Controller
             }
 
 
-            if (_customerRepository.GetByEmail(emailOfError.Value) != null)
+            if (_customerRepository.GetByEmail(emailOrError.Value) != null)
             {
                 return BadRequest("Email is already in use: " + item.Email);
             }
 
-            var customer = new Customer
-            {
-                Name = customerNameOrError.Value,
-                Email = emailOfError.Value,
-                MoneySpent = Dollars.Of(0),
-                Status = CustomerStatus.Regular,
-                StatusExpirationDate = null
-            };
-
+            var customer = new Customer(customerNameOrError.Value, emailOrError.Value);
             _customerRepository.Add(customer);
             _customerRepository.SaveChanges();
 
@@ -161,12 +149,12 @@ public class CustomersController : Controller
                 return BadRequest("Invalid customer id: " + id);
             }
 
-            if (customer.PurchasedMovies.Any(x => x.MovieId == movie.Id && !x.ExpirationDate.IsExpired))
+            if (customer.PurchasedMovies.Any(x => x.Movie.Id == movie.Id && !x.ExpirationDate.IsExpired))
             {
                 return BadRequest("The movie is already purchased: " + movie.Name);
             }
 
-            _customerService.PurchaseMovie(customer, movie);
+            customer.PurchaseMovie(movie);
 
             _customerRepository.SaveChanges();
 
@@ -190,12 +178,12 @@ public class CustomersController : Controller
                 return BadRequest("Invalid customer id: " + id);
             }
 
-            if (customer.Status == CustomerStatus.Advanced && !customer.StatusExpirationDate.IsExpired)
+            if (customer.Status.IsAdvanced)
             {
                 return BadRequest("The customer already has the Advanced status");
             }
 
-            bool success = _customerService.PromoteCustomer(customer);
+            bool success = customer.Promote();
             if (!success)
             {
                 return BadRequest("Cannot promote the customer");
