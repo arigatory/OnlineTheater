@@ -1,4 +1,8 @@
-﻿namespace Logic.Entities;
+﻿using CSharpFunctionalExtensions;
+using Logic.Movies;
+using Entity = Logic.Common.Entity;
+
+namespace Logic.Customers;
 
 public class Customer : Entity
 {
@@ -9,14 +13,10 @@ public class Customer : Entity
         set => _name = value;
     }
 
-    private string _email;
-    public virtual Email Email
-    {
-        get => (Email)_email;
-        protected set => _email = value;
-    }
+    private readonly string _email;
+    public virtual Email Email => (Email)_email;
 
-    public virtual CustomerStatus Status { get; set; }
+    public virtual CustomerStatus Status { get; protected set; }
 
     private decimal _moneySpent;
     public virtual Dollars MoneySpent
@@ -42,8 +42,15 @@ public class Customer : Entity
         Status = CustomerStatus.Regular;
     }
 
+    public virtual bool HasPurchasedMovie(Movie movie)
+    {
+        return PurchasedMovies.Any(x => x.Movie == movie && !x.ExpirationDate.IsExpired);
+    }
+
     public virtual void PurchaseMovie(Movie movie)
     {
+        if (HasPurchasedMovie(movie))
+            throw new Exception();
         ExpirationDate expirationDate = movie.GetExpirationDate();
         Dollars price = movie.CalculatePrice(Status);
 
@@ -53,19 +60,26 @@ public class Customer : Entity
         MoneySpent += price;
     }
 
-    public virtual bool Promote()
+    public virtual Result CanPromote()
     {
-        // at least 2 active movies during the last 30 days
-        if (PurchasedMovies.Count(x => x.ExpirationDate == ExpirationDate.Infinite
-            || x.ExpirationDate.Date >= DateTime.UtcNow.AddDays(-30)) < 2)
-            return false;
+        if (Status.IsAdvanced)
+            return Result.Fail("The customer already has the Advanced status");
 
-        // at least 100 dollars spent during the last year
+        if (PurchasedMovies.Count(x => x.ExpirationDate == ExpirationDate.Infinite
+        || x.ExpirationDate.Date >= DateTime.UtcNow.AddDays(-30)) < 2)
+            return Result.Fail("The customer has to have at least 2 active movies during the last 30 days");
+
         if (PurchasedMovies.Where(x => x.PurchaseDate > DateTime.UtcNow.AddYears(-1)).Sum(x => x.Price) < 100m)
-            return false;
+            return Result.Fail("The customer already has to have at least 100 dollars spent during the last year");
+
+        return Result.Ok();
+    }
+
+    public virtual void Promote()
+    {
+        if (CanPromote().IsFailure)
+            throw new Exception();
 
         Status = Status.Promote();
-
-        return true;
     }
 }

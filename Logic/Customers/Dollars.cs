@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Logic.Entities
+namespace Logic.Customers
 {
     public class Dollars : ValueObject<Dollars>
     {

@@ -1,4 +1,7 @@
-﻿namespace Logic.Entities;
+﻿using Logic.Common;
+using Logic.Movies;
+
+namespace Logic.Customers;
 
 public class PurchasedMovie : Entity
 {

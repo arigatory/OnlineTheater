@@ -1,4 +1,6 @@
-﻿namespace Logic.Dtos;
+﻿using Api.Customers;
+
+namespace Logic.Dtos;
 
 public class PurchasedMovieDto
 {
