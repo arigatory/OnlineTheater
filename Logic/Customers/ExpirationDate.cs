@@ -1,6 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 
-namespace Logic.Entities
+namespace Logic.Customers
 {
     public class ExpirationDate : ValueObject<ExpirationDate>
     {
@@ -39,7 +39,7 @@ namespace Logic.Entities
             return Infinite;
         }
 
-        public static implicit operator DateTime? (ExpirationDate date)
+        public static implicit operator DateTime?(ExpirationDate date)
         {
             return date.Date;
         }

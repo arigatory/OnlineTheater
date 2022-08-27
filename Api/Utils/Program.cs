@@ -1,4 +1,6 @@
-using Logic.Repositories;
+using Api.Utils;
+using Logic.Customers;
+using Logic.Movies;
 using Logic.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +20,9 @@ builder.Services.AddTransient<CustomerRepository>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+
+app.UseMiddleware<ExceptionHandler>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
