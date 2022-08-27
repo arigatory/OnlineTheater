@@ -1,4 +1,5 @@
-﻿using Logic.Dtos;
+﻿using CSharpFunctionalExtensions;
+using Logic.Dtos;
 using Logic.Entities;
 using Logic.Repositories;
 using Logic.Services;
@@ -77,20 +78,26 @@ public class CustomersController : Controller
     {
         try
         {
-            if (!ModelState.IsValid)
+            Result<CustomerName> customerNameOrError = CustomerName.Create(item.Name);
+            Result<Email> emailOfError = Email.Create(item.Email);
+
+            Result result = Result.Combine(customerNameOrError, emailOfError);
+            if (result.IsFailure)
             {
-                return BadRequest(ModelState);
+                return BadRequest(result.Error);
+
             }
 
-            if (_customerRepository.GetByEmail(item.Email) != null)
+
+            if (_customerRepository.GetByEmail(emailOfError.Value) != null)
             {
                 return BadRequest("Email is already in use: " + item.Email);
             }
 
             var customer = new Customer
             {
-                Name = new CustomerName(item.Name),
-                Email = new Email(item.Email),
+                Name = customerNameOrError.Value,
+                Email = emailOfError.Value,
                 MoneySpent = 0,
                 Status = CustomerStatus.Regular,
                 StatusExpirationDate = null
@@ -113,9 +120,10 @@ public class CustomersController : Controller
     {
         try
         {
-            if (!ModelState.IsValid)
+            Result<CustomerName> customerNameOrError = CustomerName.Create(item.Name);
+            if (customerNameOrError.IsFailure)
             {
-                return BadRequest(ModelState);
+                return BadRequest(customerNameOrError.Error);
             }
 
             Customer customer = _customerRepository.GetById(id);
@@ -124,7 +132,7 @@ public class CustomersController : Controller
                 return BadRequest("Invalid customer id: " + id);
             }
 
-            customer.Name = new CustomerName(item.Name);
+            customer.Name = customerNameOrError.Value;
             _customerRepository.SaveChanges();
 
             return Ok();

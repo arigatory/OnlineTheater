@@ -1,12 +1,33 @@
-﻿namespace Logic.Entities;
+﻿using CSharpFunctionalExtensions;
+using System.Text.RegularExpressions;
+
+namespace Logic.Entities;
 
 public class Email : ValueObject<Email>
 {
     public string Value { get; }
 
-    public Email(string value)
+    private Email(string value)
     {
         Value = value;
+    }
+
+    public static Result<Email> Create(string email)
+    {
+        email = (email ?? string.Empty).Trim();
+
+        if (email.Length == 0)
+        {
+            return Result.Fail<Email>("Email should not be empty");
+        }
+
+        if (!Regex.IsMatch(email, @"^(.+)@(.+)$"))
+        {
+            return Result.Fail<Email>("Email is invalid");
+
+        }
+
+        return Result.Ok(new Email(email));
     }
 
     protected override bool EqualsCore(Email other)

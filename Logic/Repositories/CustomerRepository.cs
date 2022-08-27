@@ -17,7 +17,7 @@ public class CustomerRepository : Repository<Customer>
             .ToList();
     }
 
-    public Customer GetByEmail(string email)
+    public Customer GetByEmail(Email email)
     {
         return _unitOfWork
             .Query<Customer>()
